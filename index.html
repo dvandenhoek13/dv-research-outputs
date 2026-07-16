@@ -55,7 +55,7 @@ button.filter.active, button.filter:hover { border-color:var(--cyan); box-shadow
 <div class="wrap">
   <header>
     <h1>Research, Reports & Publications</h1>
-    <p class="lead">Academic publications, preprints, professional reports, university outputs, tools, and research translation documents.</p>
+    <p class="lead">Academic publications, professional reports, university outputs, tools, and research translation documents. Preprints are shown only when a corresponding peer-reviewed publication is not available.</p>
     <div id="meta" class="meta">Loading research outputs...</div>
   </header>
   <section class="controls">
@@ -66,8 +66,8 @@ button.filter.active, button.filter:hover { border-color:var(--cyan); box-shadow
   <section id="grid" class="grid"><div class="empty">Loading research outputs...</div></section>
 </div>
 <script>
-const PUBLICATIONS_URL = 'https://dvandenhoek13.github.io/tsi-publications/publications.json?v=research-20260716';
-const EXTRAS_URL = 'research-extras.json?v=research-20260716';
+const PUBLICATIONS_URL = 'https://dvandenhoek13.github.io/tsi-publications/publications.json?v=research-20260716-dedupe';
+const EXTRAS_URL = 'research-extras.json?v=research-20260716-dedupe';
 const grid = document.getElementById('grid');
 const q = document.getElementById('q');
 const meta = document.getElementById('meta');
@@ -78,6 +78,13 @@ let outputs = [];
 function esc(s) {
   return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 }
+function norm(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[®™]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
 function yearFrom(item) {
   return String(item.year || (item.publication_date || '').slice(0,4) || '');
 }
@@ -87,8 +94,52 @@ function sortDate(item) {
 function bestUrl(item) {
   return item.url || item.doi_url || item.open_access_url || item.openalex_url || '';
 }
+function isPreprint(p) {
+  const doi = String(p.doi || '').toLowerCase();
+  const source = String(p.journal || '').toLowerCase();
+  const url = String(p.open_access_url || p.doi_url || '').toLowerCase();
+  return doi.includes('10.51224') || source.includes('sportrxiv') || url.includes('sportrxiv');
+}
+function canonicalTitle(p) {
+  const t = norm(p.title);
+  if (t.includes('powerlifting a viable method') || t.includes('powerlifting participation and engagement across all ages')) return 'powerlifting-participation-engagement';
+  if (t.includes('using powerlifting athletes to determine strength adaptations') || t.includes('longitudinal growth modelling of strength adaptations') || t.includes('long term adaptations in the squat bench press and deadlift')) return 'powerlifting-strength-adaptations-across-ages';
+  return t;
+}
+function isMediaOrCommentary(p) {
+  const t = norm(p.title);
+  const doi = String(p.doi || '').toLowerCase();
+  return doi.startsWith('10.64628/') ||
+    t.includes('what challenges do paralympic athletes face') ||
+    t.includes('after being wowed by olympic athletes') ||
+    t.includes('what happens to f1 drivers') ||
+    t.includes('do it with your eyes closed') ||
+    t.includes('your body can be a portable gym') ||
+    t.includes('3 reasons why paralympic powerlifters');
+}
+function dedupePublications(publications) {
+  const byKey = new Map();
+  publications.filter(p => !isMediaOrCommentary(p)).forEach(p => {
+    const key = canonicalTitle(p);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, p);
+      return;
+    }
+    const existingPreprint = isPreprint(existing);
+    const currentPreprint = isPreprint(p);
+    if (existingPreprint && !currentPreprint) {
+      byKey.set(key, p);
+      return;
+    }
+    const existingDate = String(existing.publication_date || existing.year || '0000');
+    const currentDate = String(p.publication_date || p.year || '0000');
+    if (existingPreprint === currentPreprint && currentDate > existingDate) byKey.set(key, p);
+  });
+  return [...byKey.values()];
+}
 function normalizePublication(p) {
-  const type = p.doi && String(p.doi).includes('10.51224') ? 'Preprints' : 'Journal Articles';
+  const type = isPreprint(p) ? 'Preprints' : 'Journal Articles';
   return {
     title: p.title,
     source: p.journal || (type === 'Preprints' ? 'SportRxiv' : 'Research publication'),
@@ -144,12 +195,12 @@ async function loadJson(url) {
 }
 Promise.all([loadJson(PUBLICATIONS_URL), loadJson(EXTRAS_URL)])
   .then(([pubPayload, extrasPayload]) => {
-    const publications = (pubPayload.publications || []).map(normalizePublication);
+    const publications = dedupePublications(pubPayload.publications || []).map(normalizePublication);
     const extras = extrasPayload.outputs || [];
     outputs = [...publications, ...extras].sort((a,b) => sortDate(b).localeCompare(sortDate(a)) || String(a.title).localeCompare(String(b.title)));
     const categories = [...new Set(outputs.map(item => item.category || 'Research'))].sort();
     setupFilters(categories);
-    meta.innerHTML = `<strong>${outputs.length}</strong> research outputs listed. Publication data is loaded from the TSI publication feed and supplemented with reports and research translation outputs.`;
+    meta.innerHTML = `<strong>${outputs.length}</strong> research outputs listed. Publication data is loaded from the TSI publication feed, media/commentary duplicates are excluded, and preprints are suppressed when a peer-reviewed publication is available.`;
     q.addEventListener('input', render);
     render();
   })
