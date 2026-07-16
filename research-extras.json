@@ -4,6 +4,18 @@
   "description": "Professional reports, university outputs, tools, and research translation items that sit alongside journal articles and preprints.",
   "outputs": [
     {
+      "title": "UniSC Research Profile: Dan van den Hoek",
+      "source": "University of the Sunshine Coast",
+      "year": "2026",
+      "date": "2026",
+      "category": "University Outputs",
+      "topic": "Research Profile",
+      "authors": "Daniel van den Hoek",
+      "description": "Public-facing UniSC researcher profile with institutional research outputs and profile information.",
+      "url": "https://research.usc.edu.au/esploro/profile/dan_van_den_hoek/overview?institution=61USC_INST",
+      "button_text": "Open profile"
+    },
+    {
       "title": "Optimising the scoring coefficient formula in para-powerlifting",
       "source": "World Para Powerlifting",
       "year": "2024",
