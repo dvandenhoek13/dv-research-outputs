@@ -1,0 +1,67 @@
+{
+  "generated_at": "2026-07-16",
+  "owner": "Dr Dan van den Hoek",
+  "description": "Professional reports, university outputs, tools, and research translation items that sit alongside journal articles and preprints.",
+  "outputs": [
+    {
+      "title": "Optimising the scoring coefficient formula in para-powerlifting",
+      "source": "World Para Powerlifting",
+      "year": "2024",
+      "date": "2024",
+      "category": "Professional Reports",
+      "topic": "Parasport",
+      "authors": "Daniel van den Hoek and collaborators",
+      "description": "Applied technical report for World Para Powerlifting supporting evidence-informed competition scoring. Public link to be confirmed before enabling.",
+      "url": "",
+      "button_text": "Details pending"
+    },
+    {
+      "title": "The Optimisation of Bodyweight Categories for Para-Powerlifting Competitions",
+      "source": "World Para Powerlifting",
+      "year": "2023",
+      "date": "2023",
+      "category": "Professional Reports",
+      "topic": "Parasport",
+      "authors": "Daniel van den Hoek and collaborators",
+      "description": "Applied technical report for World Para Powerlifting on bodyweight category optimisation. Public link to be confirmed before enabling.",
+      "url": "",
+      "button_text": "Details pending"
+    },
+    {
+      "title": "Evaluation and reporting for the AusActive Million Moves campaign",
+      "source": "AusActive",
+      "year": "2024",
+      "date": "2024",
+      "category": "Professional Reports",
+      "topic": "Health",
+      "authors": "Daniel van den Hoek and collaborators",
+      "description": "Professional evaluation and reporting output connected to physical activity promotion. Public link to be confirmed before enabling.",
+      "url": "",
+      "button_text": "Details pending"
+    },
+    {
+      "title": "Strength Norms Calculator",
+      "source": "The Strength Initiative",
+      "year": "2026",
+      "date": "2026",
+      "category": "Tools & Resources",
+      "topic": "Powerlifting",
+      "authors": "Daniel van den Hoek",
+      "description": "Interactive tool for interpreting powerlifting performance using normative strength values and competition data.",
+      "url": "https://dvandenhoek13.shinyapps.io/strength-norms-calculator/",
+      "button_text": "Open tool"
+    },
+    {
+      "title": "Building Partnerships for Inclusive Sport: Research and Community Programs",
+      "source": "UniSC and Sporting Wheelies",
+      "year": "2026",
+      "date": "2026-06-26",
+      "category": "University Outputs",
+      "topic": "Inclusive Sport",
+      "authors": "Daniel van den Hoek and collaborators",
+      "description": "Public-facing symposium and partnership activity focused on inclusive sport, technology, education, and community programs. Public documentation to be added when available.",
+      "url": "",
+      "button_text": "Details pending"
+    }
+  ]
+}
