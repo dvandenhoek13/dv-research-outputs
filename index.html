@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research, Reports & Publications | Dan van den Hoek</title>
+<style>
+:root {
+  --cyan:#00BCD4;
+  --bg:#111216;
+  --panel:#17191f;
+  --text:#f5f5f5;
+  --muted:#bfc5cc;
+  --line:#3b4048;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  font-family:Arial, Helvetica, sans-serif;
+  background:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+    var(--bg);
+  background-size:44px 44px;
+  color:var(--text);
+}
+.wrap { width:100%; max-width:none; margin:0 auto; padding:36px 22px 52px; }
+h1 { margin:0 0 12px; text-transform:uppercase; letter-spacing:-.045em; font-size:clamp(3rem,8vw,7rem); line-height:.88; font-weight:900; }
+.lead { margin:0; color:var(--text); font-family:'Courier New', monospace; font-weight:700; max-width:980px; }
+.meta { margin-top:12px; color:var(--muted); font-family:'Courier New', monospace; font-size:.9rem; }
+.controls { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:28px 0; }
+.search { flex:1 1 280px; min-width:220px; padding:12px 13px; background:#0f1116; color:var(--text); border:1px solid var(--line); border-radius:0; font-size:1rem; font-family:'Courier New', monospace; }
+button.filter { border:1px solid var(--line); background:var(--panel); color:var(--text); padding:10px 12px; cursor:pointer; font-weight:800; font-family:'Courier New', monospace; text-transform:uppercase; }
+button.filter.active, button.filter:hover { border-color:var(--cyan); box-shadow:0 0 14px rgba(0,188,212,.35); }
+.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+.card { background:rgba(23,25,31,.94); border:1px solid var(--line); padding:18px; min-height:210px; display:flex; flex-direction:column; justify-content:space-between; }
+.card:hover { border-color:var(--cyan); box-shadow:0 0 18px rgba(0,188,212,.22); }
+.topline { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.tag, .topic { display:inline-block; font-family:'Courier New', monospace; font-weight:800; font-size:.78rem; color:var(--muted); border:1px solid var(--line); padding:4px 7px; }
+.topic { color:#dffbff; border-color:rgba(0,188,212,.55); }
+.source { color:var(--muted); font-family:'Courier New', monospace; font-weight:800; margin-bottom:8px; }
+.title { font-weight:900; font-size:1.08rem; line-height:1.28; margin:0 0 10px; }
+.authors { color:#d7dde3; font-size:.88rem; line-height:1.35; margin:0 0 10px; }
+.desc { color:var(--muted); font-size:.94rem; line-height:1.42; margin:0 0 18px; }
+.actions { margin-top:auto; display:flex; gap:8px; flex-wrap:wrap; }
+.actions a, .disabled { display:inline-block; color:var(--text); background:#10141a; border:1px solid #17333a; text-decoration:none; padding:10px 12px; font-family:'Courier New', monospace; font-size:.95rem; text-transform:uppercase; box-shadow:0 0 14px rgba(0,188,212,.28); }
+.actions a:hover { border-color:var(--cyan); }
+.disabled { opacity:.62; box-shadow:none; }
+.empty { border:1px dashed var(--line); padding:24px; color:var(--muted); background:var(--panel); }
+@media (max-width:1100px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:650px) { .grid { grid-template-columns:1fr; } .wrap { padding:28px 14px 40px; } h1 { font-size:clamp(2.7rem,16vw,4.5rem); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Research, Reports & Publications</h1>
+    <p class="lead">Academic publications, preprints, professional reports, university outputs, tools, and research translation documents.</p>
+    <div id="meta" class="meta">Loading research outputs...</div>
+  </header>
+  <section class="controls">
+    <input id="q" class="search" placeholder="Search research outputs..." aria-label="Search research outputs">
+    <button class="filter active" data-category="All">All</button>
+    <span id="category-buttons"></span>
+  </section>
+  <section id="grid" class="grid"><div class="empty">Loading research outputs...</div></section>
+</div>
+<script>
+const PUBLICATIONS_URL = 'https://dvandenhoek13.github.io/tsi-publications/publications.json?v=research-20260716';
+const EXTRAS_URL = 'research-extras.json?v=research-20260716';
+const grid = document.getElementById('grid');
+const q = document.getElementById('q');
+const meta = document.getElementById('meta');
+const categoryButtons = document.getElementById('category-buttons');
+let activeCategory = 'All';
+let outputs = [];
+
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+}
+function yearFrom(item) {
+  return String(item.year || (item.publication_date || '').slice(0,4) || '');
+}
+function sortDate(item) {
+  return String(item.date || item.publication_date || item.year || '0000');
+}
+function bestUrl(item) {
+  return item.url || item.doi_url || item.open_access_url || item.openalex_url || '';
+}
+function normalizePublication(p) {
+  const type = p.doi && String(p.doi).includes('10.51224') ? 'Preprints' : 'Journal Articles';
+  return {
+    title: p.title,
+    source: p.journal || (type === 'Preprints' ? 'SportRxiv' : 'Research publication'),
+    year: yearFrom(p),
+    date: p.publication_date || String(p.year || ''),
+    category: type,
+    topic: p.topic_tag || 'Research',
+    authors: Array.isArray(p.authors) ? p.authors.join(', ') : '',
+    description: p.plain_english_summary || 'Research output by Dan van den Hoek and collaborators.',
+    url: bestUrl(p),
+    secondary_url: p.open_access_url && p.open_access_url !== p.doi_url ? p.open_access_url : '',
+    button_text: p.doi ? 'Read article' : 'View output'
+  };
+}
+function card(item) {
+  const url = bestUrl(item);
+  const btn = item.button_text || (item.category === 'Professional Reports' ? 'Open report' : 'View output');
+  const primary = url ? `<a target="_blank" rel="noopener" href="${esc(url)}">${esc(btn)} ↗</a>` : `<span class="disabled">${esc(btn || 'Link pending')}</span>`;
+  const secondary = item.secondary_url ? `<a target="_blank" rel="noopener" href="${esc(item.secondary_url)}">Open access ↗</a>` : '';
+  const date = [item.source, item.year].filter(Boolean).join(' · ');
+  return `<article class="card">
+    <div>
+      <div class="topline"><span class="tag">${esc(item.category || 'Research')}</span><span class="topic">${esc(item.topic || 'Research')}</span></div>
+      <div class="source">${esc(date)}</div>
+      <h2 class="title">${esc(item.title)}</h2>
+      ${item.authors ? `<p class="authors">${esc(item.authors)}</p>` : ''}
+      <p class="desc">${esc(item.description)}</p>
+    </div>
+    <div class="actions">${primary}${secondary}</div>
+  </article>`;
+}
+function render() {
+  const term = q.value.trim().toLowerCase();
+  const filtered = outputs.filter(item => {
+    const haystack = [item.title,item.source,item.category,item.topic,item.description,item.authors,item.year].join(' ').toLowerCase();
+    return (activeCategory === 'All' || item.category === activeCategory) && (!term || haystack.includes(term));
+  });
+  grid.innerHTML = filtered.length ? filtered.map(card).join('') : '<div class="empty">No research outputs match the current filter.</div>';
+}
+function setupFilters(categories) {
+  categoryButtons.innerHTML = categories.map(c => `<button class="filter" data-category="${esc(c)}">${esc(c)}</button>`).join('');
+  document.querySelectorAll('button.filter').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('button.filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCategory = btn.dataset.category;
+    render();
+  }));
+}
+async function loadJson(url) {
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error(`Could not load ${url}: ${response.status}`);
+  return response.json();
+}
+Promise.all([loadJson(PUBLICATIONS_URL), loadJson(EXTRAS_URL)])
+  .then(([pubPayload, extrasPayload]) => {
+    const publications = (pubPayload.publications || []).map(normalizePublication);
+    const extras = extrasPayload.outputs || [];
+    outputs = [...publications, ...extras].sort((a,b) => sortDate(b).localeCompare(sortDate(a)) || String(a.title).localeCompare(String(b.title)));
+    const categories = [...new Set(outputs.map(item => item.category || 'Research'))].sort();
+    setupFilters(categories);
+    meta.innerHTML = `<strong>${outputs.length}</strong> research outputs listed. Publication data is loaded from the TSI publication feed and supplemented with reports and research translation outputs.`;
+    q.addEventListener('input', render);
+    render();
+  })
+  .catch(err => {
+    console.error(err);
+    meta.textContent = 'Unable to load research outputs.';
+    grid.innerHTML = '<div class="empty">Unable to load research outputs. Check the publication feed and research-extras.json.</div>';
+  });
+</script>
+</body>
+</html>
