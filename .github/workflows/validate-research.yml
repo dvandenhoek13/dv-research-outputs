@@ -65,17 +65,49 @@ jobs:
           print(f'Validated {len(outputs)} research extras.')
           PY
 
-      - name: Validate external publication feed is reachable
+      - name: Validate Dan-authored publication feed
         run: |
           python - <<'PY'
           import json
+          import re
           from urllib.request import urlopen
 
           url = 'https://dvandenhoek13.github.io/tsi-publications/publications.json'
           with urlopen(url, timeout=30) as response:
               payload = json.loads(response.read().decode('utf-8'))
+
           publications = payload.get('publications')
           if not isinstance(publications, list) or not publications:
               raise SystemExit('External TSI publication feed did not return a non-empty publications list')
-          print(f'External publication feed reachable with {len(publications)} publications.')
+
+          accepted_names = {
+              'dan van den hoek',
+              'daniel van den hoek',
+              'd van den hoek',
+          }
+
+          def normalize(value):
+              return re.sub(r'[^a-z0-9]+', ' ', str(value).lower()).strip()
+
+          dan_authored = []
+          for publication in publications:
+              authors = publication.get('authors') or []
+              if any(normalize(author) in accepted_names for author in authors):
+                  dan_authored.append(publication)
+
+          if not dan_authored:
+              raise SystemExit('No publications authored by Dan van den Hoek were found in the external feed')
+
+          invalid = [
+              publication.get('title', '<untitled>')
+              for publication in dan_authored
+              if not any(normalize(author) in accepted_names for author in publication.get('authors') or [])
+          ]
+          if invalid:
+              raise SystemExit(f'Author filter validation failed for: {invalid}')
+
+          print(
+              f'External publication feed reachable with {len(publications)} publications; '
+              f'{len(dan_authored)} are authored by Dan van den Hoek.'
+          )
           PY
